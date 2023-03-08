@@ -6,7 +6,7 @@ const commentRouter = express.Router();
 
 commentRouter.route('/')
 .get((req, res, next) => {
-    Comment.findById(req.params.recipeId)
+    Comment.find()
     .populate('comments.author')
     .then(comments => {
         res.statusCode = 200;
