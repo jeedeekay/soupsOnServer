@@ -7,7 +7,6 @@ const mongoose = require('mongoose');
 
 const userRouter = express.Router();
 
-/* GET users listing. */
 userRouter.get('/', cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, function(req, res, next) {
   User.find()
   .then(users => {
@@ -17,45 +16,6 @@ userRouter.get('/', cors.corsWithOptions, authenticate.verifyUser, authenticate.
   })
   .catch(err => next(err));
 });
-
-userRouter.route('/:userId')
-.get((req, res, next) => {
-  console.log(req.body);
-  User.find()
-  .then(user => {
-    console.log(user);
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'application/json');
-    res.json(user);
-  })
-})
-.post((req, res, next) => {
-  console.log('post req',req.body);
-  User.find()
-  .then(user => {
-    user.forEach((u) => {
-      if (u.username === req.body.username) {
-        console.log('user match', u);
-        console.log(req.body.addFav);
-        const newFav = {
-          _id: mongoose.Types.ObjectId(req.body.addFav)
-        };
-        console.log('new fav', newFav);
-        if (!u.favoriteRecipes.includes((rec) => {
-          rec._id === newFav._id
-        })) {
-          u.favoriteRecipes.push(newFav);
-          u.save();
-          console.log('pushed');
-        }
-        console.log(u.favoriteRecipes);
-      }
-    });
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'application/json');
-    res.json(user);
-  })
-})
 
 userRouter.post('/signup', cors.corsWithOptions, (req, res) => {
   User.register(
@@ -109,6 +69,56 @@ userRouter.get('/logout', cors.corsWithOptions, (req, res, next) => {
     err.status = 401;
     return next(err);
   }
+});
+
+userRouter.get('/:userId', (req, res, next) => {
+  console.log(req.body);
+  User.find()
+  .then(user => {
+    console.log(user);
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'application/json');
+    res.json(user);
+  })
+});
+
+userRouter.post('/fave', (req, res, next) => {
+  console.log('userid post', req.body);
+  User.find()
+  .then(user => {
+    user.forEach((u) => {
+      console.log(u.username);
+      if (u.username === req.body.username) {
+        console.log('user match', u);
+        console.log(req.body.addFav);
+        const newFav = {
+          _id: mongoose.Types.ObjectId(req.body.addFav)
+      }
+      console.log('new fav', newFav);
+      console.log('find', u.favoriteRecipes.find((saved) => saved._id.equals(newFav._id)));
+      if (u.favoriteRecipes.find((saved) => saved._id.equals(newFav._id)) === undefined) {
+        console.log('not found');
+        console.log('not a fave');
+        u.favoriteRecipes.push(newFav);
+        u.save();
+        console.log('pushed');
+      } else {
+        const foundFave = u.favoriteRecipes.find((saved) => saved._id.equals(newFav._id));
+        if (foundFave._id.equals(newFav._id)) {
+          console.log('matches', foundFave._id);
+          console.log(u.favoriteRecipes.indexOf(foundFave));
+          u.favoriteRecipes.splice(u.favoriteRecipes.indexOf(foundFave),1);
+          u.save()
+      }
+
+      console.log(u.favoriteRecipes);
+      }
+    }})
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'application/json');
+    res.json(user);
+  })
+  .catch(err => next(err));
 });
 
 module.exports = userRouter;
